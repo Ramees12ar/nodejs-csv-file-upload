@@ -1,0 +1,8 @@
+{
+    "name": "development",
+    "port": 3005,
+    "apiUrl": "http://localhost:3005/",
+    "username":"admin",
+    "password":"admin@123",
+    "secretKey":"ABsdsBahLo08sj7s6dfjs986ds5Ga6dnTRabv"
+}
