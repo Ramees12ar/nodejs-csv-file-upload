@@ -1,5 +1,6 @@
 import Sequelize from 'sequelize'
 import sequelize from '../database/connect.mjs';
+import imports from './import.mjs';
 
 const surveyResults = sequelize.define('survey_results', {
     id: {
@@ -8,8 +9,16 @@ const surveyResults = sequelize.define('survey_results', {
         autoIncrement: true
     },
     year: {
-        type: Sequelize.TEXT,
+        type: Sequelize.STRING,
         defaultValue: null,
+    },
+    import_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+            model: imports,
+            key: 'id'
+        }
     },
     industry_code: {
         type: Sequelize.STRING,
@@ -43,5 +52,8 @@ const surveyResults = sequelize.define('survey_results', {
     deletedAt: "deleted_at",
     freezeTableName: true,
 })
+
+imports.hasMany(surveyResults, { foreignKey: 'import_id' });
+surveyResults.belongsTo(imports, { foreignKey: 'import_id' });
 
 export default surveyResults;
