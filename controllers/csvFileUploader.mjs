@@ -42,14 +42,15 @@ export const getSurveyData = async (req, res) => {
     try {
         console.log(req.query, req.params)
         const { page = 0, limit = 20 } = req.query
+        console.log(page, limit)
         const { importId = "" } = req.params
         if (!importId) {
             throw Error(vars.MESSAGES.FIELD_MISSING.replace("#FIELD#", "importId"), BAD_REQUEST)
         }
         const results = await surveyResults.findAndCountAll({
             where: { import_id: importId },
-            limit: limit,
-            offset: page * limit,
+            limit: parseInt(limit),
+            offset: parseInt(page) * parseInt(limit),
         });
         res.status(SUCCESS).json({ success: SUCCESS, message: vars.MESSAGES.SUCCESS, data: { count: results.count, data: results.rows } })
     } catch (err) {
