@@ -6,6 +6,8 @@
 ### Execution
     npm install
     npm run dev
+### Testing
+    npm run mochatest
 
 ## Login
 
@@ -48,3 +50,7 @@ here we can upload csv file.
 | `file` | `file` | **Required**.|
 
 #### *NB: need to pass accessToken in headers
+
+## test cases
+
+### mocha test cases added

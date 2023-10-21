@@ -5,7 +5,7 @@
   "main": "index.mjs",
   "scripts": {
     "dev": "nodemon index",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "mochatest": "mocha test/*test.mjs --timeout 20000"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +26,9 @@
     "sequelize": "^6.33.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
   }
 }
