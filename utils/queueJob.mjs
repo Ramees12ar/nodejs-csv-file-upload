@@ -1,8 +1,9 @@
-import Error from "../utils/errorManagement.mjs"
+import imports from "../model/import.mjs"
 import vars from "../variables/vars.mjs"
 import fs from "fs"
 import csvParser from "csv-parser"
 import surveyResults from "../model/surey_result.mjs";
+import Error from "./errorManagement.mjs";
 
 /**
  * @function validateRequiredFields - validating required fields
@@ -23,7 +24,7 @@ function validateRequiredFields(row) {
     return { isValid: true }; // All required fields are present
 }
 
-async function readCsvFile(path) {
+async function readCsvFile(path, importId) {
     return new Promise((resolve, reject) => {
         const validationErrors = [];
         const dataRow = []
@@ -37,7 +38,7 @@ async function readCsvFile(path) {
                 // Perform required field validation
                 const { isValid = false, missingFields = [] } = validateRequiredFields(row);
                 if (isValid) {
-                    dataRow.push(row)
+                    dataRow.push({ ...row, import_id: importId })
                 } else {
                     validationErrors.push(`Validation Error: Required field(s) ${missingFields.join(",")} missing in the ${rowLine} row.`)
                 }
@@ -49,38 +50,47 @@ async function readCsvFile(path) {
     })
 }
 
-const fileUpload = async (req, res) => {
-    const { BAD_REQUEST, INTERNAL_SERVER_ERROR, SUCCESS } = vars.STATUS_CODE
+async function dbUpdate(model, condition, update) {
     try {
-        const csvFile = req.file
-        if (!csvFile) {
-            throw Error(vars.MESSAGES.UPLOAD_FILE, BAD_REQUEST)
+        await model.update(update, { where: condition })
+    } catch (err) {
+        throw err
+    }
+}
+
+const queueJob = async (job) => {
+    const { BAD_REQUEST } = vars.STATUS_CODE
+    const importId = job.data.id
+    try {
+        const importData = await imports.findOne({ where: { id: importId }, attributes: ['name'] })
+        if (!importData) {
+            await dbUpdate(imports, { id: importId }, { status: "failed", error_status: true, error_message: vars.MESSAGES.DATA_NOT_EXIST })
+            throw Error(vars.MESSAGES.DATA_NOT_EXIST, BAD_REQUEST)
         }
-        const { dataRow, validationErrors } = await readCsvFile(csvFile.path)
+        await dbUpdate(imports, { id: importId }, { status: "pending" })
+        const path = vars.temp_path + importData.name
+        const { dataRow, validationErrors } = await readCsvFile(path, importId)
         if (validationErrors.length > 0) {
             throw Error(vars.MESSAGES.REQUIRED_FIELDS_MISSING, BAD_REQUEST, validationErrors)
         }
         surveyResults.bulkCreate(dataRow)
             .then(() => {
-                if (fs.existsSync(csvFile.path)) {
+                if (fs.existsSync(path)) {
                     // Delete the file
-                    fs.unlinkSync(csvFile.path)
+                    fs.unlinkSync(path)
                 }
-                res.status(SUCCESS).json({
-                    status: SUCCESS,
-                    message: "Uploaded the file successfully: " + req.file.originalname,
-                });
+                dbUpdate(imports, { id: importId }, { status: "completed" })
             })
             .catch((error) => {
-                res.status(INTERNAL_SERVER_ERROR).send({
-                    status: INTERNAL_SERVER_ERROR,
-                    message: "Fail to import data into database!",
-                    error: error.message,
-                });
+                dbUpdate(imports, { id: importId }, { status: "failed", error_status: true, error_message: JSON.stringify(error) })
             })
+        return true;
     } catch (err) {
-        return res.status(err.code || INTERNAL_SERVER_ERROR).json({ status: err.code || INTERNAL_SERVER_ERROR, message: err.message, err: err })
+        imports.update(
+            { status: "failed", error_status: true, error_message: JSON.stringify(err) },
+            { where: { id: importId } }
+        )
+        return err;
     }
 }
-
-export default fileUpload
+export default queueJob;
