@@ -14,7 +14,10 @@ const vars = {
         VALID_TOKEN: "please pass valid token",
         UNAUTHORIZED: "Unauthorized",
         UPLOAD_FILE: "Please upload a CSV file!",
-        REQUIRED_FIELDS_MISSING: "Required field missing the file."
+        REQUIRED_FIELDS_MISSING: "Required field missing the file.",
+        FILE_UPLOADED: "file successfully uploaded",
+        DATA_NOT_EXIST: "data not exist",
+        FIELD_MISSING:"required field #FIELD# missing",
     },
     temp_path: ".tmp/",
 };
